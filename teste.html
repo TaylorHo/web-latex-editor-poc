@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+  <script src="https://cdn.jsdelivr.net/npm/latex.js@0.12.6/dist/latex.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/latex.js@0.12.6/dist/css/article.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/latex.js@0.12.6/dist/css/base.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/latex.js@0.12.6/dist/css/book.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/latex.js@0.12.6/dist/css/katex.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.36.5/src-min/ace.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.36.5/src-min/ext-language_tools.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ace-builds@1.36.5/css/ace.css">
+
+  <title>LaTeX Editor</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+
+    header .buttons {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: row;
+      gap: 8px;
+    }
+
+    header .buttons button {
+      padding: 5px 10px;
+      background-color: #627587;
+      transition: all ease .3s;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
+    }
+
+    header .buttons button:hover {
+      background-color: #7e9bb5;
+    }
+
+    .container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    #editor {
+      width: 50%;
+      height: 100%;
+      background: #f4f4f4;
+    }
+
+    #preview {
+      width: 50%;
+      height: 100%;
+      overflow: auto;
+      background: white;
+      padding: 10px;
+    }
+
+    #error {
+      position: absolute;
+      right: 20px;
+      bottom: 20px;
+      border-radius: 6px;
+      background-color: #e94242;
+      color: white;
+      padding: 10px 10px 10px 20px;
+      font-size: 1rem;
+      opacity: 0;
+      transition: opacity ease 0.3s;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      cursor: default;
+    }
+
+    #error .error-icon {
+      color: #ffd9d9;
+      font-weight: bold;
+      margin-left: 10px;
+      font-size: 1.2rem;
+      border-radius: 100%;
+      border: 1px solid #ffd9d9;
+      padding: 2px 6px;
+    }
+
+    #divider {
+      width: 8px;
+      cursor: ew-resize;
+      background: #2c3e50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 0;
+      position: relative;
+    }
+
+    #divider-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-around;
+      padding: 40px 0 60px;
+      height: 100%;
+    }
+
+    .dot {
+      font-size: 14px;
+      color: #ecf0f1;
+    }
+
+    .arrow {
+      font-size: 8px;
+      color: #ecf0f1;
+      cursor: pointer;
+      background-color: #76828e;
+      padding: 0 16px;
+      transform: rotate(90deg);
+      transition: background-color ease 0.3s;
+    }
+
+    .arrow:hover {
+      background-color: #a2a8ad;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .noselect {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>LaTeX Editor</h1>
+    <div class="buttons">
+      <button onclick="downloadLatexFile()">Download .tex file <span
+          style="transform: rotate(90deg); display: inline-block;">&#x21E5;</span></button>
+      <!-- <button>Save as PDF <span style="transform: rotate(90deg); display: inline-block;">&#x21E5;</span></button> -->
+    </div>
+  </header>
+
+  <div class="container">
+    <div id="editor"></div>
+    <div id="divider">
+      <div id="divider-content">
+        <span class="dot noselect">&#x283F;</span>
+        <span class="arrow noselect" onclick="togglePreview()">&#x22C0;</span>
+        <span class="dot noselect">&#x283F;</span>
+      </div>
+    </div>
+    <div id="preview"></div>
+    <div id="error">
+      <span class="error-message"></span>
+      <span class="error-icon">&#x03A7;</span>
+    </div>
+  </div>
+
+  <script>
+    let editor;
+    const divider = document.getElementById('divider');
+    const arrow = document.querySelector('.arrow');
+    const editorDiv = document.getElementById('editor');
+    const previewDiv = document.getElementById('preview');
+    const errorArea = document.getElementById('error');
+
+    function renderLatexPreview(latexString) {
+      try {
+        let generator = new latexjs.HtmlGenerator({ hyphenate: false });
+        generator = latexjs.parse(latexString, { generator: generator });
+        previewDiv.replaceChildren(generator.domFragment());
+        showError(null);
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+
+    function showError(message) {
+      if (message) errorArea.querySelector('.error-message').textContent = message;
+      errorArea.style.opacity = message ? 1 : 0;
+    }
+
+    // Draggable Divider
+    divider.addEventListener('mousedown', (e) => {
+      document.addEventListener('mousemove', resizePanels);
+      document.addEventListener('mouseup', () => {
+        document.removeEventListener('mousemove', resizePanels);
+      });
+    });
+
+    function resizePanels(e) {
+      const containerRect = document.querySelector('.container').getBoundingClientRect();
+      const offset = e.clientX - containerRect.left;
+      const widthPercent = (offset / containerRect.width) * 100;
+      const editorDivWidth = Math.min(80, Math.max(20, widthPercent));
+      const previewDivWidth = Math.min(80, Math.max(20, 100 - widthPercent));
+
+      editorDiv.style.width = `${editorDivWidth}%`;
+      previewDiv.style.width = `${previewDivWidth}%`;
+
+      if (editorDivWidth == 80) {
+        if (!previewDiv.classList.contains('hidden')) {
+          document.removeEventListener('mousemove', resizePanels);
+          hidePreview();
+        }
+      } else {
+        if (previewDiv.classList.contains('hidden')) {
+          showPreview(false);
+        }
+      }
+    }
+
+    function downloadLatexFile() {
+      const latexString = editor.getValue();
+      const blob = new Blob([latexString], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'latex-file.tex';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function togglePreview() {
+      if (previewDiv.classList.contains('hidden')) {
+        showPreview();
+      } else {
+        hidePreview();
+      }
+    }
+
+    function showPreview(setWidth = true) {
+      previewDiv.classList.remove('hidden');
+      divider.style.display = 'block';
+      if (setWidth) editorDiv.style.width = '50%';
+      if (setWidth) previewDiv.style.width = '50%';
+      arrow.style.transform = 'rotate(90deg)';
+    }
+    function hidePreview() {
+      previewDiv.classList.add('hidden');
+      divider.style.display = 'block';
+      editorDiv.style.width = '100%';
+      arrow.style.transform = 'rotate(-90deg)';
+    }
+
+    // Load Ace Editor only when ace.js is fully loaded (usefull on slow networks)
+    let interval = setInterval(() => {
+      if (ace && !editor) {
+        ace.require("ace/ext/language_tools");
+        editor = ace.edit("editor", {
+          mode: "ace/mode/latex",
+        });
+
+        editor.setOptions({
+          printMargin: false,
+          theme: "ace/theme/textmate",
+          enableLiveAutocompletion: true,
+        });
+
+        editor.session.on('change', () => {
+          renderLatexPreview(editor.getValue());
+        });
+
+        clearInterval(interval);
+      }
+    }, 100);
+  </script>
+  <script async defer src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</body>
+
+</html>

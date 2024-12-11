@@ -1,0 +1,30 @@
+\documentclass[a4paper,12pt]{article}
+
+\author{Taylor Hoffmann}
+\title{Real time \LaTeX \space Editor}
+
+\begin{document}
+
+\maketitle
+
+The Lambert $W$ function is defined as the inverse of $xe^x$. That is:
+
+$$y=W(x)\iff x=ye^y$$
+
+It turns out that this has a nice Taylor series:
+
+$$W(x)=\sum_{k=1}^\infty\frac{(-k)^{k-1}}{k!}x^k$$
+
+We will derive this, and we'll take a slightly unusual path to get there.
+
+Taylor's theorem is:
+
+$$f(x)=\sum_{k=0}^\infty f^{(k)}(a)\frac{(x-a)^k}{k!}$$
+
+I could use this theorem directly on $W(x)$, but that involves differentiating $W(x)$ a bunch of times and seeing if I can find a pattern. That's really messy. I'll use a more interesting approach.
+
+In fact, I'll only need to use this theorem on polynomials. This avoids issues of convergence; for polynomials, the Taylor series is really a finite sum, because if $k$ is large enough, then $f^{(k)}=0$. (Also, Taylor's theorem is much easier to prove for polynomials than for general functions.)
+
+Let's make a useful change of notation. Instead of writing $f'$ for the derivative of $f$, let's write $Df$. (Here, $D$ is an \textit{operator} -- it turns a function into a function.) Additionally, $\dfrac{x^k}{k!}$ is \textit{such} an important polynomial that I'll give it a special name: $d_k(x):=\dfrac{x^k}{k!}$.
+
+\end{document}
